@@ -19,6 +19,7 @@ ActionGesture_FILES = ActionGesture.xm ActionGestureSettings.xm ActionGestureHel
 ActionGesture_CFLAGS += -fobjc-arc -Wno-deprecated-declarations -fno-modules
 ActionGesture_CCFLAGS += -fno-modules -fno-cxx-modules
 ActionGesture_FRAMEWORKS += Foundation UIKit
+ActionGesture_LDFLAGS += -fuse-ld=lld
 
 ifeq ($(SCHEME),roothide)
     ActionGesture_LIBRARIES += roothide
