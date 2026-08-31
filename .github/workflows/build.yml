@@ -27,6 +27,22 @@ jobs:
           ln -sf "$(command -v clang)" "$THEOS/toolchain/linux/iphone/bin/clang"
           ln -sf "$(command -v clang++)" "$THEOS/toolchain/linux/iphone/bin/clang++"
           ln -sf "$(command -v ld.lld)" "$THEOS/toolchain/linux/iphone/bin/ld.llvm"
+          cat > "$RUNNER_TEMP/theos-clang-wrapper" <<'EOF'
+          #!/usr/bin/env bash
+          args=()
+          for arg in "$@"; do
+            if [[ "$arg" == "-fuse-ld=llvm" ]]; then
+              args+=("-fuse-ld=lld")
+            else
+              args+=("$arg")
+            fi
+          done
+          exec "${CLANG_REAL}" "${args[@]}"
+          EOF
+          chmod +x "$RUNNER_TEMP/theos-clang-wrapper"
+          sed "s#\${CLANG_REAL}#/usr/bin/clang#" "$RUNNER_TEMP/theos-clang-wrapper" > "$THEOS/toolchain/linux/iphone/bin/clang"
+          sed "s#\${CLANG_REAL}#/usr/bin/clang++#" "$RUNNER_TEMP/theos-clang-wrapper" > "$THEOS/toolchain/linux/iphone/bin/clang++"
+          chmod +x "$THEOS/toolchain/linux/iphone/bin/clang" "$THEOS/toolchain/linux/iphone/bin/clang++"
           export PATH="$THEOS/toolchain/linux/iphone/bin:$PATH"
           make package SCHEME=rootless FINALPACKAGE=1
       - name: Upload package
