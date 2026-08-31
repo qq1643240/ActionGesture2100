@@ -26,6 +26,7 @@ jobs:
           mkdir -p "$THEOS/toolchain/linux/iphone/bin"
           rm -f "$THEOS/toolchain/linux/iphone/bin/clang" "$THEOS/toolchain/linux/iphone/bin/clang++"
           ln -sf "$(command -v ld.lld)" "$THEOS/toolchain/linux/iphone/bin/ld.llvm"
+          ln -sf "$(command -v llvm-strip)" "$THEOS/toolchain/linux/iphone/bin/strip"
           cat > "$RUNNER_TEMP/theos-clang-wrapper" <<'EOF'
           #!/usr/bin/env bash
           args=()
