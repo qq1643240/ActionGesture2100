@@ -23,7 +23,8 @@
 %hook ActionButtonSettings
 
 %new
-- (void)ag_systemActionChanged:(__unused NSNotification *)notification {
+- (void)ag_systemActionChanged:(NSNotification *)notification {
+    (void)notification;
     [self ag_installSelectors];
 }
 
