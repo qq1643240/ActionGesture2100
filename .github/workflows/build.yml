@@ -11,7 +11,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install build dependencies
-        run: sudo apt-get update && sudo apt-get install -y clang make git perl fakeroot dpkg-dev ldid
+        run: sudo apt-get update && sudo apt-get install -y clang make git perl fakeroot dpkg-dev
       - name: Install Theos and SDK
         shell: bash
         run: |
