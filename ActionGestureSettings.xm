@@ -105,7 +105,8 @@
                           image:[UIImage systemImageNamed:
                                     [helper symbolForGesture:gesture]]
                      identifier:nil
-                        handler:^(__unused UIAction *selectedAction) {
+                        handler:^(UIAction *selectedAction) {
+                            (void)selectedAction;
                             [weakSelf ag_switchToGesture:gesture];
                         }];
         action.state = [gesture isEqualToString:helper.currentGesture]
@@ -135,7 +136,8 @@
                 actionWithTitle:[helper titleForQuickAction:quickAction]
                           image:nil
                      identifier:nil
-                        handler:^(__unused UIAction *selectedAction) {
+                        handler:^(UIAction *selectedAction) {
+                            (void)selectedAction;
                             [weakSelf ag_selectQuickAction:quickAction];
                         }];
         action.state = [quickAction isEqualToString:currentAction]
