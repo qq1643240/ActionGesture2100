@@ -15,10 +15,10 @@ jobs:
       - name: Install Theos and SDK
         shell: bash
         run: |
-          git clone --recursive --depth 1 https://github.com/theos/theos.git "$HOME/theos"
+          git clone --recursive --depth 1 https://github.com/roothide/theos.git "$HOME/theos"
           git clone --depth 1 https://github.com/theos/sdks.git "$RUNNER_TEMP/sdks"
           cp -R "$RUNNER_TEMP"/sdks/*.sdk "$HOME/theos/sdks/"
-      - name: Build rootless package
+      - name: Build Relaxin roothide arm64e package
         env:
           THEOS: ${{ github.workspace }}/.theos
         run: |
@@ -44,9 +44,9 @@ jobs:
           sed "s#\${CLANG_REAL}#/usr/bin/clang++#" "$RUNNER_TEMP/theos-clang-wrapper" > "$THEOS/toolchain/linux/iphone/bin/clang++"
           chmod +x "$THEOS/toolchain/linux/iphone/bin/clang" "$THEOS/toolchain/linux/iphone/bin/clang++"
           export PATH="$THEOS/toolchain/linux/iphone/bin:$PATH"
-          make package SCHEME=rootless FINALPACKAGE=1
+          make package SCHEME=roothide FINALPACKAGE=1
       - name: Upload package
         uses: actions/upload-artifact@v4
         with:
-          name: ActionGesture2100-rootless
-          path: packages/*.deb
+          name: ActionGesture2100-roothide-arm64e
+          path: packages/*arm64e*.deb
