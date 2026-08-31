@@ -3,7 +3,7 @@
 #if __has_include(<roothide.h>)
 #import <roothide.h>
 #else
-static inline const char *jbroot(const char *path) { return path; }
+static inline NSString *jbroot(NSString *path) { return path; }
 #endif
 
 NSString *const AGGestureSingle = @"single";

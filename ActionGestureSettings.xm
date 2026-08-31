@@ -1,64 +1,248 @@
 #import <UIKit/UIKit.h>
+
 #import "ActionGestureHelper.h"
 
 %group ActionGestureOfficialSettings
+
 %hook NSUserDefaults
-- (void)setObject:(id)value forKey:(NSString *)key { %orig; [[ActionGestureHelper sharedHelper] systemActionPreferenceDidChangeForKey:key]; }
-- (void)removeObjectForKey:(NSString *)key { %orig; [[ActionGestureHelper sharedHelper] systemActionPreferenceDidChangeForKey:key]; }
+
+- (void)setObject:(id)value forKey:(NSString *)key {
+    %orig;
+    [[ActionGestureHelper sharedHelper]
+        systemActionPreferenceDidChangeForKey:key];
+}
+
+- (void)removeObjectForKey:(NSString *)key {
+    %orig;
+    [[ActionGestureHelper sharedHelper]
+        systemActionPreferenceDidChangeForKey:key];
+}
+
 %end
 
 %hook ActionButtonSettings
+
 %new
-- (void)ag_systemActionChanged:(__unused NSNotification *)notification { [self ag_installSelectors]; }
+- (void)ag_systemActionChanged:(__unused NSNotification *)notification {
+    [self ag_installSelectors];
+}
+
 %new
-- (UIButton *)ag_selectorButtonWithTitle:(NSString *)title menu:(UIMenu *)menu accessibilityLabel:(NSString *)label {
+- (UIButton *)ag_selectorButtonWithTitle:(NSString *)title
+                                    menu:(UIMenu *)menu
+                      accessibilityLabel:(NSString *)label {
     UIButton *button = [UIButton buttonWithType:UIButtonTypeSystem];
-    UIButtonConfiguration *c = [UIButtonConfiguration tintedButtonConfiguration];
-    c.attributedTitle = [[NSAttributedString alloc] initWithString:title attributes:@{NSFontAttributeName:[UIFont systemFontOfSize:12.5 weight:UIFontWeightSemibold], NSForegroundColorAttributeName:[UIColor colorWithWhite:1 alpha:.94]}];
-    c.image = [UIImage systemImageNamed:@"chevron.up.chevron.down"]; c.imagePlacement = NSDirectionalRectEdgeTrailing; c.imagePadding = 4; c.contentInsets = NSDirectionalEdgeInsetsMake(4.5, 8, 4.5, 7); c.cornerStyle = UIButtonConfigurationCornerStyleCapsule; c.buttonSize = UIButtonConfigurationSizeSmall; c.baseForegroundColor = [UIColor colorWithWhite:1 alpha:.78]; c.baseBackgroundColor = [UIColor colorWithWhite:1 alpha:.10];
-    button.configuration = c; button.menu = menu; button.showsMenuAsPrimaryAction = YES; button.accessibilityLabel = label; return button;
+    UIButtonConfiguration *configuration =
+        [UIButtonConfiguration tintedButtonConfiguration];
+    configuration.attributedTitle =
+        [[NSAttributedString alloc]
+            initWithString:title
+                attributes:@{
+                    NSFontAttributeName:
+                        [UIFont systemFontOfSize:12.5
+                                           weight:UIFontWeightSemibold],
+                    NSForegroundColorAttributeName:
+                        [UIColor colorWithWhite:1.0 alpha:0.94]
+                }];
+    configuration.image =
+        [UIImage systemImageNamed:@"chevron.up.chevron.down"];
+    configuration.imagePlacement = NSDirectionalRectEdgeTrailing;
+    configuration.imagePadding = 4.0;
+    configuration.contentInsets =
+        NSDirectionalEdgeInsetsMake(4.5, 8.0, 4.5, 7.0);
+    configuration.cornerStyle = UIButtonConfigurationCornerStyleCapsule;
+    configuration.buttonSize = UIButtonConfigurationSizeSmall;
+    configuration.baseForegroundColor =
+        [UIColor colorWithWhite:1.0 alpha:0.78];
+    configuration.baseBackgroundColor =
+        [UIColor colorWithWhite:1.0 alpha:0.10];
+    button.configuration = configuration;
+    button.menu = menu;
+    button.showsMenuAsPrimaryAction = YES;
+    button.accessibilityLabel = label;
+    return button;
 }
 
 %new
 - (void)ag_installSelectors {
-    ActionGestureHelper *h = [ActionGestureHelper sharedHelper];
-    NSString *gestureTitle = [h titleForGesture:h.currentGesture];
-    NSString *quickTitle = [h titleForQuickAction:[h quickActionForGesture:h.currentGesture]];
-    UIButton *gesture = [self ag_selectorButtonWithTitle:gestureTitle menu:[self ag_gestureMenu] accessibilityLabel:gestureTitle];
-    UIButton *quick = [self ag_selectorButtonWithTitle:quickTitle menu:[self ag_quickActionMenu] accessibilityLabel:quickTitle];
-    BOOL systemAction = [h currentNativeConfigurationHasSystemAction];
-    quick.enabled = !systemAction;
-    UIStackView *stack = [[UIStackView alloc] initWithArrangedSubviews:@[ gesture, quick ]]; stack.axis = UILayoutConstraintAxisHorizontal; stack.alignment = UIStackViewAlignmentCenter; stack.spacing = 5;
-    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithCustomView:stack];
+    ActionGestureHelper *helper = [ActionGestureHelper sharedHelper];
+    NSString *gestureTitle =
+        [helper titleForGesture:helper.currentGesture];
+    NSString *quickTitle =
+        [helper titleForQuickAction:
+                  [helper quickActionForGesture:helper.currentGesture]];
+    UIButton *gestureButton =
+        [self ag_selectorButtonWithTitle:gestureTitle
+                                    menu:[self ag_gestureMenu]
+                      accessibilityLabel:gestureTitle];
+    UIButton *quickButton =
+        [self ag_selectorButtonWithTitle:quickTitle
+                                    menu:[self ag_quickActionMenu]
+                      accessibilityLabel:quickTitle];
+    quickButton.enabled =
+        ![helper currentNativeConfigurationHasSystemAction];
+
+    UIStackView *selectors =
+        [[UIStackView alloc]
+            initWithArrangedSubviews:@[ gestureButton, quickButton ]];
+    selectors.axis = UILayoutConstraintAxisHorizontal;
+    selectors.alignment = UIStackViewAlignmentCenter;
+    selectors.spacing = 5.0;
+    self.navigationItem.rightBarButtonItem =
+        [[UIBarButtonItem alloc] initWithCustomView:selectors];
 }
 
 %new
 - (UIMenu *)ag_gestureMenu {
-    ActionGestureHelper *h = [ActionGestureHelper sharedHelper]; NSMutableArray *items = [NSMutableArray array]; __weak typeof(self) w = self;
-    for (NSString *g in @[ AGGestureSingle, AGGestureDouble, AGGestureLong ]) { UIAction *a = [UIAction actionWithTitle:[h titleForGesture:g] image:[UIImage systemImageNamed:[h symbolForGesture:g]] identifier:nil handler:^(__unused UIAction *x){ [w ag_switchToGesture:g]; }]; a.state = [g isEqualToString:h.currentGesture] ? UIMenuElementStateOn : UIMenuElementStateOff; [items addObject:a]; }
-    return [UIMenu menuWithTitle:[h localizedStringForKey:@"menu.title"] image:nil identifier:nil options:UIMenuOptionsSingleSelection children:items];
+    ActionGestureHelper *helper = [ActionGestureHelper sharedHelper];
+    NSMutableArray<UIMenuElement *> *actions = [NSMutableArray array];
+    __weak ActionButtonSettings *weakSelf = self;
+    for (NSString *gesture in
+            @[ AGGestureSingle, AGGestureDouble, AGGestureLong ]) {
+        UIAction *action =
+            [UIAction
+                actionWithTitle:[helper titleForGesture:gesture]
+                          image:[UIImage systemImageNamed:
+                                    [helper symbolForGesture:gesture]]
+                     identifier:nil
+                        handler:^(__unused UIAction *selectedAction) {
+                            [weakSelf ag_switchToGesture:gesture];
+                        }];
+        action.state = [gesture isEqualToString:helper.currentGesture]
+            ? UIMenuElementStateOn
+            : UIMenuElementStateOff;
+        [actions addObject:action];
+    }
+    return [UIMenu
+        menuWithTitle:[helper localizedStringForKey:@"menu.title"]
+                image:nil
+           identifier:nil
+              options:UIMenuOptionsSingleSelection
+             children:actions];
 }
 
 %new
 - (UIMenu *)ag_quickActionMenu {
-    ActionGestureHelper *h = [ActionGestureHelper sharedHelper]; __weak typeof(self) w = self; NSMutableArray *items = [NSMutableArray array]; BOOL disabled = [h currentNativeConfigurationHasSystemAction];
-    for (NSString *action in [h quickActions]) { UIAction *a = [UIAction actionWithTitle:[h titleForQuickAction:action] image:nil identifier:nil handler:^(__unused UIAction *x){ [w ag_selectQuickAction:action]; }]; a.state = [action isEqualToString:[h quickActionForGesture:h.currentGesture]] ? UIMenuElementStateOn : UIMenuElementStateOff; if (disabled) a.attributes = UIMenuElementAttributesDisabled; [items addObject:a]; }
-    return [UIMenu menuWithTitle:[h localizedStringForKey:@"quickAction.menu"] image:nil identifier:nil options:UIMenuOptionsSingleSelection children:items];
+    ActionGestureHelper *helper = [ActionGestureHelper sharedHelper];
+    NSMutableArray<UIMenuElement *> *actions = [NSMutableArray array];
+    __weak ActionButtonSettings *weakSelf = self;
+    BOOL disabled = [helper currentNativeConfigurationHasSystemAction];
+    NSString *currentAction =
+        [helper quickActionForGesture:helper.currentGesture];
+    for (NSString *quickAction in [helper quickActions]) {
+        UIAction *action =
+            [UIAction
+                actionWithTitle:[helper titleForQuickAction:quickAction]
+                          image:nil
+                     identifier:nil
+                        handler:^(__unused UIAction *selectedAction) {
+                            [weakSelf ag_selectQuickAction:quickAction];
+                        }];
+        action.state = [quickAction isEqualToString:currentAction]
+            ? UIMenuElementStateOn
+            : UIMenuElementStateOff;
+        if (disabled) {
+            action.attributes = UIMenuElementAttributesDisabled;
+        }
+        [actions addObject:action];
+    }
+    return [UIMenu
+        menuWithTitle:[helper localizedStringForKey:@"quickAction.menu"]
+                image:nil
+           identifier:nil
+              options:UIMenuOptionsSingleSelection
+             children:actions];
 }
 
 %new
-- (void)ag_selectQuickAction:(NSString *)action { ActionGestureHelper *h = [ActionGestureHelper sharedHelper]; if (![h currentNativeConfigurationHasSystemAction]) { [h saveQuickAction:action forGesture:h.currentGesture]; [self ag_installSelectors]; } }
+- (void)ag_selectQuickAction:(NSString *)action {
+    ActionGestureHelper *helper = [ActionGestureHelper sharedHelper];
+    if ([helper currentNativeConfigurationHasSystemAction]) return;
+    [helper saveQuickAction:action forGesture:helper.currentGesture];
+    [self ag_installSelectors];
+}
 
 %new
-- (void)ag_switchToGesture:(NSString *)gesture { ActionGestureHelper *h = [ActionGestureHelper sharedHelper]; if (![h isKnownGesture:gesture] || [gesture isEqualToString:h.currentGesture]) return; if ([h hasStoredConfigurationForGesture:h.currentGesture]) [h snapshotNativeConfigurationForGesture:h.currentGesture]; [h saveCurrentGesture:gesture]; [h applyNativeConfigurationForGesture:gesture]; [self ag_replaceController]; }
+- (void)ag_switchToGesture:(NSString *)gesture {
+    ActionGestureHelper *helper = [ActionGestureHelper sharedHelper];
+    if (![helper isKnownGesture:gesture] ||
+        [gesture isEqualToString:helper.currentGesture]) {
+        return;
+    }
+    if ([helper hasStoredConfigurationForGesture:helper.currentGesture]) {
+        [helper snapshotNativeConfigurationForGesture:helper.currentGesture];
+    }
+    [helper saveCurrentGesture:gesture];
+    [helper applyNativeConfigurationForGesture:gesture];
+    [self ag_replaceController];
+}
 
 %new
-- (void)ag_replaceController { UINavigationController *nav = self.navigationController; NSUInteger i = [nav.viewControllers indexOfObjectIdenticalTo:self]; if (!nav || i == NSNotFound) return; ActionButtonSettings *replacement = [[[self class] alloc] initWithNibName:nil bundle:[ActionGestureHelper sharedHelper].settingsBundle]; replacement.title = self.title; NSMutableArray *controllers = [nav.viewControllers mutableCopy]; controllers[i] = replacement; [nav setViewControllers:controllers animated:NO]; }
+- (void)ag_replaceController {
+    UINavigationController *navigationController = self.navigationController;
+    NSUInteger index =
+        [navigationController.viewControllers indexOfObjectIdenticalTo:self];
+    if (!navigationController || index == NSNotFound) return;
+    ActionButtonSettings *replacement =
+        [[[self class] alloc]
+            initWithNibName:nil
+                     bundle:[ActionGestureHelper sharedHelper].settingsBundle];
+    replacement.title = self.title;
+    NSMutableArray<UIViewController *> *controllers =
+        [navigationController.viewControllers mutableCopy];
+    controllers[index] = replacement;
+    [navigationController setViewControllers:controllers animated:NO];
+}
 
-- (void)viewDidLoad { ActionGestureHelper *h = [ActionGestureHelper sharedHelper]; [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(ag_systemActionChanged:) name:@"AGSystemActionChanged" object:nil]; [h beginSuppressingSystemActionSnapshots]; [h applyNativeConfigurationForGesture:h.currentGesture]; %orig; [h endSuppressingSystemActionSnapshots]; if (![h hasStoredConfigurationForGesture:h.currentGesture]) [h snapshotNativeConfigurationForGesture:h.currentGesture]; [self ag_installSelectors]; }
-- (void)viewWillAppear:(BOOL)animated { %orig; [self ag_installSelectors]; }
-- (void)viewWillDisappear:(BOOL)animated { %orig; [[NSNotificationCenter defaultCenter] removeObserver:self name:@"AGSystemActionChanged" object:nil]; ActionGestureHelper *h = [ActionGestureHelper sharedHelper]; if ([h hasStoredConfigurationForGesture:h.currentGesture]) [h snapshotNativeConfigurationForGesture:h.currentGesture]; }
+- (void)viewDidLoad {
+    ActionGestureHelper *helper = [ActionGestureHelper sharedHelper];
+    [[NSNotificationCenter defaultCenter]
+        addObserver:self
+           selector:@selector(ag_systemActionChanged:)
+               name:@"AGSystemActionChanged"
+             object:nil];
+    [helper beginSuppressingSystemActionSnapshots];
+    [helper applyNativeConfigurationForGesture:helper.currentGesture];
+    %orig;
+    [helper endSuppressingSystemActionSnapshots];
+    if (![helper hasStoredConfigurationForGesture:helper.currentGesture]) {
+        [helper snapshotNativeConfigurationForGesture:helper.currentGesture];
+    }
+    [self ag_installSelectors];
+}
+
+- (void)viewWillAppear:(BOOL)animated {
+    %orig;
+    [self ag_installSelectors];
+}
+
+- (void)viewWillDisappear:(BOOL)animated {
+    %orig;
+    [[NSNotificationCenter defaultCenter]
+        removeObserver:self
+                  name:@"AGSystemActionChanged"
+                object:nil];
+    ActionGestureHelper *helper = [ActionGestureHelper sharedHelper];
+    if ([helper hasStoredConfigurationForGesture:helper.currentGesture]) {
+        [helper snapshotNativeConfigurationForGesture:helper.currentGesture];
+    }
+}
+
 %end
 %end
 
-%ctor { @autoreleasepool { if (![NSBundle.mainBundle.bundleIdentifier isEqualToString:@"com.apple.Preferences"]) return; ActionGestureHelper *h = [ActionGestureHelper sharedHelper]; [h loadEditorState]; if (!h.settingsBundle.loaded) [h.settingsBundle loadAndReturnError:nil]; if (!NSClassFromString(@"ActionButtonSettings")) return; %init(ActionGestureOfficialSettings); } }
+%ctor {
+    @autoreleasepool {
+        if (![NSBundle.mainBundle.bundleIdentifier
+                isEqualToString:@"com.apple.Preferences"]) {
+            return;
+        }
+        ActionGestureHelper *helper = [ActionGestureHelper sharedHelper];
+        [helper loadEditorState];
+        if (!helper.settingsBundle.loaded) {
+            [helper.settingsBundle loadAndReturnError:nil];
+        }
+        if (!NSClassFromString(@"ActionButtonSettings")) return;
+        %init(ActionGestureOfficialSettings);
+    }
+}
