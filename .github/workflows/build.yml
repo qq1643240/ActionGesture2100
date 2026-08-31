@@ -11,7 +11,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install build dependencies
-        run: sudo apt-get update && sudo apt-get install -y clang make git perl fakeroot dpkg-dev
+        run: sudo apt-get update && sudo apt-get install -y clang lld make git perl fakeroot dpkg-dev
       - name: Install Theos and SDK
         shell: bash
         run: |
@@ -26,6 +26,8 @@ jobs:
           mkdir -p "$THEOS/toolchain/linux/iphone/bin"
           ln -sf "$(command -v clang)" "$THEOS/toolchain/linux/iphone/bin/clang"
           ln -sf "$(command -v clang++)" "$THEOS/toolchain/linux/iphone/bin/clang++"
+          ln -sf "$(command -v ld.lld)" "$THEOS/toolchain/linux/iphone/bin/ld.llvm"
+          export PATH="$THEOS/toolchain/linux/iphone/bin:$PATH"
           make package SCHEME=rootless FINALPACKAGE=1
       - name: Upload package
         uses: actions/upload-artifact@v4
